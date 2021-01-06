@@ -6,6 +6,7 @@ Installation
 $ virtualenv API
 $ source API/bin/activate
 (API)$ pip install -r path/to/requirements.txt
+(API)$ python api.py
 ```
 
 CoreNLP
