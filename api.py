@@ -161,8 +161,8 @@ def get_relationship(dep_type, subject, predicate, objects):
     return relation
 
 
-def clean_sentence(narrative):
-    li = tokenize.sent_tokenize(narrative)
+def clean_sentence(paragraph):
+    li = tokenize.sent_tokenize(paragraph)
     cleaned = []
 
     for sentence in li:
@@ -227,8 +227,32 @@ def get_sentiment(string):
 
 def get_sentiment_breakdown(string):
     text_object = NRCLex(string)
-    frequencies = text_object.affect_frequencies
-    return frequencies
+    raw_scores = text_object.raw_emotion_scores
+    affect_dict = text_object.affect_dict
+    emotion_total = 0
+    sentiment_total = 0
+    emotions = {}
+    sentiments = {}
+
+    for key, value in raw_scores.items():
+        if (key != "positive" and key != "negative"):
+            emotion_total += value
+        else:
+            sentiment_total += value
+
+    for key, value in raw_scores.items():
+        if (key != "positive" and key != "negative"):
+            emotions[key] = value/emotion_total
+        else:
+            sentiments[key] = value/sentiment_total
+
+    return {"emotions": emotions, "sentiments": sentiments, "raw_scores": raw_scores, "affect_dict": affect_dict}
+
+
+# def get_sentiment_breakdown(string):
+#     text_object = NRCLex(string)
+#     frequencies = text_object.affect_frequencies
+#     return frequencies
 
 
 def check_v2(paragraph, sentences):
@@ -263,10 +287,10 @@ def check_v2(paragraph, sentences):
             if (sentiment_val == "NEG" or _hasBehavior == True):
                 return {'tag': "U", 'behaviors': dictionary, 'sentiments': sentiments}
             else:
-                return {'tag': "W", 'behaviors': None, 'sentiments': None}
+                return {'tag': "W", 'behaviors': dictionary, 'sentiments': sentiments}
             break
         except:
-            return {'tag': 'Error', 'behaviors': None, 'sentiments': None}
+            return {'tag': 'Internal Error', 'behaviors': None, 'sentiments': None}
 
 
 @ app.route('/')
@@ -276,14 +300,20 @@ def home():
 
 @ app.route("/classify", methods=['POST'])
 def classify():
-    data = request.form['input']
+    # data = request.form['input']
+    data = request.json
+    data = data['input']
 
     sentences = clean_sentence(data)
     paragraph = clean_paragraph(data)
 
     output = check_v2(paragraph, sentences)
-    return render_template('index.html', output=output)
+
+    return output
+
+    # Uncomment for html interface:
+    # return render_template('index.html', output=output)
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=False)
